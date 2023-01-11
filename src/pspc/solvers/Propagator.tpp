@@ -36,6 +36,9 @@ namespace Pspc {
    Propagator<D>::~Propagator()
    {}
 
+   /*
+   * Allocate memory used by this propagator.
+   */
    template <int D>
    void Propagator<D>::allocate(int ns, const Mesh<D>& mesh)
    {
@@ -47,6 +50,22 @@ namespace Pspc {
          qFields_[i].allocate(mesh.dimensions());
       }
       isAllocated_ = true;
+   }
+
+   /*
+   * Reallocate memory used by this propagator using new ns value.
+   */
+   template <int D>
+   void Propagator<D>::reallocate(int ns)
+   {
+      UTIL_CHECK(isAllocated_);
+      UTIL_CHECK(ns_ != ns);
+      ns_ = ns;
+      qFields_.deallocate();
+      qFields_.allocate(ns);
+      for (int i = 0; i < ns; ++i) {
+         qFields_[i].allocate(meshPtr_->dimensions());
+      }
    }
 
    /*

@@ -245,6 +245,9 @@ namespace Pspc {
       // Contour length step size (actual step size for this block)
       double ds_;
 
+      // Contour length step size (value input in param file)
+      double dsTarget_;
+
       // Number of contour grid points = # of contour steps + 1
       int ns_;
 
