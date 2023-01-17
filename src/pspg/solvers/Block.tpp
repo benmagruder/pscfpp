@@ -141,6 +141,7 @@ namespace Pspg {
     : meshPtr_(0),
       kMeshDimensions_(0),
       ds_(0.0),
+      dsTarget_(0.0),
       ns_(0),
       temp_(0),
       isAllocated_(false),
@@ -183,8 +184,9 @@ namespace Pspg {
       meshPtr_ = &mesh;
 
       // Set contour length discretization for this block
+      dsTarget_ = ds;
       int tempNs;
-      tempNs = floor( length()/(2.0 *ds) + 0.5 );
+      tempNs = floor( length()/(2.0 *dsTarget_) + 0.5 );
       if (tempNs == 0) {
          tempNs = 1;
       }
@@ -243,13 +245,29 @@ namespace Pspg {
    * Set or reset the the block length.
    */
    template <int D>
-   void Block<D>::setLength(double length)
+   void Block<D>::setLength(double newLength)
    {
-      BlockDescriptor::setLength(length);
-      if (isAllocated_) {
-         UTIL_CHECK(ns_ > 1); 
-         ds_ = length/double(ns_ - 1);
+      BlockDescriptor::setLength(newLength);
+      if (isAllocated_) { // if setDiscretization has already been called
+         // Reset contour length discretization
+         UTIL_CHECK(dsTarget_ > 0);
+         int oldNs = ns_;
+         int tempNs;
+         tempNs = floor( length()/(2.0 *dsTarget_) + 0.5 );
+         if (tempNs == 0) {
+            tempNs = 1;
+         }
+         ns_ = 2*tempNs + 1;
+         ds_ = length()/double(ns_-1);
+
+         if (oldNs != ns_) {
+            // If propagators are already allocated and ns_ has changed, 
+            // reallocate memory for solutions to MDE
+            propagator(0).reallocate(ns_);
+            propagator(1).reallocate(ns_);
+         }
       }
+      
       hasExpKsq_ = false;
    }
 

@@ -88,9 +88,9 @@ namespace Pspc {
       /**
       * Set or reset block length.
       * 
-      * \param length  new block length
+      * \param newLength  new block length
       */
-      void setLength(double length);
+      void setLength(double newLength);
 
       /**
       * Set or reset monomer statistical segment length.

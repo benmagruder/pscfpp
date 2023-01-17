@@ -71,9 +71,9 @@ namespace Pspg {
       /**
       * Set or reset block length.
       * 
-      * \param length  new block length
+      * \param newLength  new block length
       */
-      void setLength(double length);
+      void setLength(double newLength);
 
       /**
       * Set or reset monomer statistical segment length.
@@ -232,8 +232,11 @@ namespace Pspg {
       /// Number of wavevectors in discrete Fourier transform (DFT) k-grid
       int kSize_;
 
-      /// Contour length step size.
+      /// Contour length step size (actual step size for this block).
       double ds_;
+
+      // Contour length step size (value input in param file).
+      double dsTarget_;
 
       /// Number of contour length steps = # s nodes - 1.
       int ns_;

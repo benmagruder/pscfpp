@@ -65,6 +65,24 @@ namespace Pspg {
    }
 
    /*
+   * Reallocate memory used by this propagator using new ns value.
+   */
+   template <int D>
+   void Propagator<D>::reallocate(int ns)
+   {
+      UTIL_CHECK(isAllocated_);
+      UTIL_CHECK(ns_ != ns);
+      ns_ = ns;
+
+      // Deallocate memory previously used by this propagator.
+      gpuErrchk(cudaFree((void**)&qFields_d));
+
+      // Allocate memory in qFields_ using new value of ns
+      gpuErrchk(cudaMalloc((void**)&qFields_d, 
+                           sizeof(cudaReal)* mesh.size() * ns));
+   }
+
+   /*
    * Compute initial head QField from final tail QFields of sources.
    */
    template <int D>
