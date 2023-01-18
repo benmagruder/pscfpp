@@ -31,6 +31,9 @@ namespace Fd1d
    Propagator::~Propagator()
    {}
 
+   /*
+   * Allocate memory used by this propagator.
+   */
    void Propagator::allocate(int ns, int nx)
    {
       ns_ = ns;
@@ -45,8 +48,7 @@ namespace Fd1d
    /*
    * Reallocate memory used by this propagator using new ns value.
    */
-   template <int D>
-   void Propagator<D>::reallocate(int ns)
+   void Propagator::reallocate(int ns)
    {
       UTIL_CHECK(isAllocated_);
       UTIL_CHECK(ns_ != ns);
@@ -62,7 +64,7 @@ namespace Fd1d
       // Allocate memory in qFields_ using new value of ns
       qFields_.allocate(ns);
       for (int i = 0; i < ns; ++i) {
-         qFields_[i].allocate(meshPtr_->dimensions());
+         qFields_[i].allocate(nx_);
       }
    }
 

@@ -49,6 +49,9 @@ namespace Pspg {
       }
    }  
 
+   /*
+   * Allocate memory used by this propagator.
+   */
    template <int D>
    void Propagator<D>::allocate(int ns, const Mesh<D>& mesh)
    {
@@ -75,11 +78,11 @@ namespace Pspg {
       ns_ = ns;
 
       // Deallocate memory previously used by this propagator.
-      gpuErrchk(cudaFree((void**)&qFields_d));
+      gpuErrchk(cudaFree(qFields_d));
 
       // Allocate memory in qFields_ using new value of ns
       gpuErrchk(cudaMalloc((void**)&qFields_d, 
-                           sizeof(cudaReal)* mesh.size() * ns));
+                           sizeof(cudaReal) * meshPtr_->size() * ns));
    }
 
    /*
