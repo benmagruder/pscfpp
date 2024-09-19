@@ -10,6 +10,7 @@
 
 #include <pscf/iterator/FieldGenerator.h>  // Base class
 #include <pscf/math/RealVec.h>        // container
+#include <prdc/crystal/UnitCell.h>
 #include <util/containers/FSArray.h>  // container
 #include <iostream>
 #include <string>
@@ -87,6 +88,11 @@ namespace Prdc {
       double excludedThickness() const;
 
       /**
+      * Check whether a value of fBulk was provided.
+      */
+      bool hasFBulk() const;
+
+      /**
       * Check whether the field has been generated.
       */
       bool isGenerated() const = 0;
@@ -120,14 +126,70 @@ namespace Prdc {
       virtual void generate() = 0;
 
       /**
+      * Modify stress value.
+      * 
+      * If the lattice parameter corresponds to normalVecId (and 
+      * therefore defines the film thickness), then the stress is 
+      * calculated using the excess free energy per unit area, rather 
+      * than the absolute free energy. This requires a slight
+      * modification of the equation used to calculate stress, as
+      * implemented in this method. For all other lattice parameters, 
+      * the stress returned by this method is the same value that was 
+      * passed in as an input.
+      * 
+      * Note that, by default, the lattice parameter corresponding to 
+      * normalVecId should not be flexible, so this method should not be
+      * called for that lattice parameter in most instances. In order to 
+      * calculate the excess free energy per unit area, a reference free 
+      * energy must be provided equal to the free energy of the bulk 
+      * phase corresponding to this thin film morphology. Users can allow
+      * the film thickness to be flexible and optimized by providing a 
+      * reference free energy via the optional input parameter fBulk. 
+      * If fBulk is provided, the lattice parameter corresponding to 
+      * normalVecId will be flexible unless the user specified that it is
+      * rigid in the Iterator parameters.
+      * 
+      * This method is left virtual here because it requires a significant
+      * amount of information from the system. Therefore, it is 
+      * implemented by subclasses that have System access.
+      * 
+      * \param paramId  index of the lattice parameter with this stress
+      * \param stress  stress value calculated by Mixture object
+      */
+      virtual double modifyStressValue(int paramId, double stress) const = 0;
+
+      /** Which lattice parameter corresponds to normalVecId?
+      * 
+      * The index normalVecId refers to one lattice basis vector (e.g.,
+      * in 3D the value is 0, 1, or 2). However, for basis vector i, the 
+      * vector length is not always the i-th lattice parameter in the 
+      * list of lattice parameters. For example, if normalVecId = 2 but
+      * the lattice system is tetragonal, then the length of the vector
+      * denoted by this normalVecId has index 1 in the list of lattice
+      * parameters. This method converts a normalVecId index into the
+      * corresponding lattice parameter index.
+      * 
+      * \param normalVecIndex the value of normalVecId to convert
+      */
+      int convertNormalVecIdToParamId(int normalVecIndex) const;
+
+      /**
       * Sets flexible lattice parameters to be compatible with the mask.
       * 
       * An iterator for a thin film SCFT calculation should allow for
       * some lattice parameters to be fixed, while others are held 
-      * constant. Subclasses should define this method to set these
-      * lattice parameters appropriately so that the film thickness is
-      * held constant, while the other lattice parameters are allowed
-      * to be flexible if the user chooses.
+      * constant. Subclasses should define this method to set the 
+      * flexibility of these lattice parameters appropriately so that 
+      * the film thickness is held constant, as are all but one of the 
+      * angles between basis vectors (the angle in the plane of the film
+      * may vary). The other lattice parameters are allowed to be 
+      * flexible if the user specified that they are flexible in the 
+      * Iterator parameters. 
+      * 
+      * Note that the lattice parameter that defines the film thickness
+      * may be flexible if the optional input parameter fBulk is provided.
+      * This parameter is necessary to compute the stress in the direction
+      * normal to the film.
       */
       virtual void setFlexibleParams() = 0;
 
@@ -135,6 +197,12 @@ namespace Prdc {
       * Get the space group name for this system.
       */
       virtual std::string systemSpaceGroup() const = 0;
+
+      /**
+      * Get the lattice system for this system.
+      */
+      virtual 
+      typename UnitCell<D>::LatticeSystem systemLatticeSystem() const = 0;
 
       /**
       * Get one of the lattice vectors for this system.
@@ -154,6 +222,12 @@ namespace Prdc {
       */
       RealVec<D> normalVecCurrent_;
 
+      /// Reference free energy used to calculate stress normal to the film
+      double fBulk_;
+
+      using ParamComposite::read;
+      using ParamComposite::readOptional;
+
    private:
 
       /// Lattice basis vector that is normal to the walls
@@ -164,6 +238,9 @@ namespace Prdc {
 
       /// Excluded (wall) thickness
       double excludedThickness_;
+
+      /// Does this object have a value of fBulk from the parameter file?
+      bool hasFBulk_;
 
       using FieldGenerator::type_;
 
@@ -185,6 +262,11 @@ namespace Prdc {
    template <int D> 
    inline double MaskGenFilmBase<D>::excludedThickness() const
    {  return excludedThickness_; }
+
+   // Check whether a value of fBulk was provided.
+   template <int D> 
+   inline bool MaskGenFilmBase<D>::hasFBulk() const
+   {  return hasFBulk_; }
 
 }
 }

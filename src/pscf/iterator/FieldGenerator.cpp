@@ -42,5 +42,18 @@ namespace Pscf
          generate();
       }
    }   
+
+   // Modify stress value if necessary (only if type_ == Mask)
+   double FieldGenerator::modifyStress(int paramId, double stress) const 
+   {  
+      if ((type_ == Mask) || (type_ == Both)) {
+         stress = modifyStressValue(paramId, stress);
+      }
+      return stress; 
+   }
+
+   // Modify stress value if necessary 
+   double FieldGenerator::modifyStressValue(int paramId, double stress) const 
+   {  return stress; } // Default behavior: do not modify stress
    
 }

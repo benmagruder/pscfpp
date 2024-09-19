@@ -63,6 +63,29 @@ namespace Pscf {
       void update();
 
       /**
+      * Modify stress value if necessary
+      * 
+      * Some masks, such as a mask that imposes thin-film confinement, 
+      * change the way that the system free energy depends on the lattice
+      * parameters. If the lattice parameters are to be optimized in such
+      * a system, the calculation of stress may need to be modified 
+      * relative to that of a bulk system. This method allows for the
+      * FieldGenerator objects within this object to modify the stress 
+      * values as necessary. The method should be called by Iterator 
+      * classes that own this object and the return value should be used 
+      * to compute error and optimize the lattice parameters. 
+      * 
+      * This method calls the modifyStress method of the FieldGenerator
+      * object that has type Mask or Both and returns the result. If no
+      * FieldGenerator has these types, the value of stress that is 
+      * passed into this method is returned without being modified.
+      * 
+      * \param paramId  index of the lattice parameter with this stress
+      * \param stress  stress value calculated by Mixture object
+      */
+      double modifyStress(int paramId, double stress) const;
+
+      /**
       * Return specialized sweep parameter types to add to a Sweep object.
       */
       GArray<ParameterType> getParameterTypes();

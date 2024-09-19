@@ -933,7 +933,9 @@ namespace Rpc {
 
       // If converged, compute related properties
       if (!error) {
-         computeFreeEnergy();  // Sets hasFreeEnergy_ = true
+         if (!hasFreeEnergy_) {
+            computeFreeEnergy();  // Sets hasFreeEnergy_ = true
+         }
          if (!iterator().isFlexible()) {
             mixture_.computeStress();
          }
@@ -1069,6 +1071,7 @@ namespace Rpc {
             }
          }
       }
+      Log::file() << std::endl << "fIdeal: " << fIdeal_ << std::endl;
 
       // Volume integrals with a mask: If the system has a mask, then the
       // volume that should be used in calculating free energy/pressure
@@ -1104,6 +1107,7 @@ namespace Rpc {
       temp /= mask().phiTot();
       fIdeal_ += temp;
       fHelmholtz_ += fIdeal_;
+      Log::file() << "fLegendre: " << temp << std::endl;
 
       // Compute contribution from external fields, if they exist
       if (hasExternalFields()) {
@@ -1170,6 +1174,8 @@ namespace Rpc {
       }
       fInter_ /= mask().phiTot();
       fHelmholtz_ += fInter_;
+      Log::file() << "fInter: " << fInter_ << std::endl;
+      Log::file() << "fHelmholtz: " << fHelmholtz_ << std::endl;
 
       // Initialize pressure
       pressure_ = -fHelmholtz_;

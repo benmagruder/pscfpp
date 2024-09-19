@@ -62,6 +62,7 @@ namespace Rpc {
       using MaskGenFilmBase<D>::normalVecId;
       using MaskGenFilmBase<D>::interfaceThickness;
       using MaskGenFilmBase<D>::excludedThickness;
+      using MaskGenFilmBase<D>::hasFBulk;
 
    protected:
 
@@ -74,6 +75,35 @@ namespace Rpc {
       * Generate the field and store where the Iterator can access.
       */
       void generate();
+
+      /**
+      * Modify stress value.
+      * 
+      * If the lattice parameter corresponds to normalVecId (and 
+      * therefore defines the film thickness), then the stress is 
+      * calculated using the excess free energy per unit area, rather 
+      * than the absolute free energy. This requires a slight
+      * modification of the equation used to calculate stress, as
+      * implemented in this method. For all other lattice parameters, 
+      * the stress returned by this method is the same value that was 
+      * passed in as an input.
+      * 
+      * Note that, by default, the lattice parameter corresponding to 
+      * normalVecId should not be flexible, so this method should not be
+      * called for that lattice parameter in most instances. In order to 
+      * calculate the excess free energy per unit area, a reference free 
+      * energy must be provided equal to the free energy of the bulk 
+      * phase corresponding to this thin film morphology. Users can allow
+      * the film thickness to be flexible and optimized by providing a 
+      * reference free energy via the optional input parameter fBulk. 
+      * If fBulk is provided, the lattice parameter corresponding to 
+      * normalVecId will be flexible unless the user specified that it is
+      * rigid in the Iterator parameters.
+      * 
+      * \param paramId  index of the lattice parameter with this stress
+      * \param stress  stress value calculated by Mixture object
+      */
+      double modifyStressValue(int paramId, double stress) const;
 
       /**
       * Modifies iterator().flexibleParams_ to be compatible with the mask.
@@ -95,6 +125,11 @@ namespace Rpc {
       std::string systemSpaceGroup() const;
 
       /**
+      * Get the lattice system for this system.
+      */
+      typename UnitCell<D>::LatticeSystem systemLatticeSystem() const;
+
+      /**
       * Get one of the lattice vectors for this system.
       * 
       * \param id  index of the desired lattice vector
@@ -102,6 +137,8 @@ namespace Rpc {
       RealVec<D> systemLatticeVector(int id) const;
 
       using MaskGenFilmBase<D>::normalVecCurrent_;
+      using MaskGenFilmBase<D>::fBulk_;
+      using MaskGenFilmBase<D>::convertNormalVecIdToParamId;
 
    private:
 
@@ -131,6 +168,12 @@ namespace Rpc {
    template <int D>
    inline std::string MaskGenFilm<D>::systemSpaceGroup() const
    {  return system().groupName(); }
+
+   // Get lattice system for this system.
+   template <int D>
+   inline typename UnitCell<D>::LatticeSystem 
+   MaskGenFilm<D>::systemLatticeSystem() const
+   {  return system().domain().lattice(); }
 
    // Get one of the lattice vectors for this system.
    template <int D>

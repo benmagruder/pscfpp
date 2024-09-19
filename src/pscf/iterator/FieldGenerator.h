@@ -80,6 +80,31 @@ namespace Pscf {
       virtual bool isGenerated() const = 0;
 
       /**
+      * Modify stress value if necessary (only if type_ == Mask or Both)
+      * 
+      * Some masks, such as a mask that imposes thin-film confinement, 
+      * change the way that the system free energy depends on the lattice
+      * parameters. If the lattice parameters are to be optimized in such
+      * a system, the calculation of stress may need to be modified 
+      * relative to that of a bulk system. This method allows for 
+      * FieldGenerator objects to modify the stress values as necessary. 
+      * The method should be called by Iterator classes (via the 
+      * ImposedFieldsGenerator object that owns this object) and the 
+      * return value should be used to compute error and optimize the 
+      * lattice parameters. 
+      * 
+      * This method is a wrapper for a protected virtual method  
+      * modifyStressValue. This method simply checks that type_ == Mask 
+      * or Both, and then calls the internal method. Subclasses of this 
+      * class of type Mask or Both should redefine the protected virtual 
+      * method.
+      * 
+      * \param paramId  index of the lattice parameter with this stress
+      * \param stress  stress value calculated by Mixture object
+      */
+      double modifyStress(int paramId, double stress) const;
+
+      /**
       * Return Type enumeration value (Mask, External, or None)
       *
       * This value should be initialized by subclasses during construction.
@@ -98,6 +123,14 @@ namespace Pscf {
       * Generate the field(s) and store where the Iterator can access
       */
       virtual void generate() = 0;
+
+      /**
+      * Modify stress value if necessary
+      * 
+      * \param paramId  index of the lattice parameter with this stress
+      * \param stress  stress calculated by Mixture, modified internally
+      */
+      virtual double modifyStressValue(int paramId, double stress) const;
 
       /**
       * Type of field (Mask, External, Both, or None)
