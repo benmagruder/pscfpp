@@ -224,7 +224,7 @@ namespace R1d
       *
       * \param out output stream 
       */
-      void writeThermo(std::ostream& out);
+      void writeThermo(std::ostream& out) const;
 
       ///@}
       /// \name Field Output 
@@ -235,14 +235,14 @@ namespace R1d
       *
       * \param filename name of output file
       */
-      void writeW(std::string const & filename);
+      void writeW(std::string const & filename) const;
    
       /**
       * Write concentration fields in symmetrized basis format.
       *
       * \param filename name of output file
       */
-      void writeC(std::string const & filename);
+      void writeC(std::string const & filename) const;
    
       /**
       * Write c-fields for all blocks and solvents in r-grid format.
@@ -254,7 +254,7 @@ namespace R1d
       *
       * \param filename name of output file
       */
-      void writeBlockC(std::string  const & filename);
+      void writeBlockC(std::string  const & filename) const;
       
       /**
       * Write slice of a propagator at fixed s in r-grid format.
@@ -309,7 +309,7 @@ namespace R1d
       *
       * \param basename  common prefix for output file names
       */
-      void writeQAll(std::string const & basename);
+      void writeQAll(std::string const & basename) const;
 
       //@}
       /// \name Field Accessors
@@ -321,6 +321,13 @@ namespace R1d
       * The array capacity is equal to the number of monomer types.
       */
       DArray<WField>& wFields();
+
+      /**
+      * Get const array of all chemical potential fields.
+      *
+      * The array capacity is equal to the number of monomer types.
+      */
+      DArray<WField> const & wFields() const;
 
       /**
       * Get chemical potential field for a specific monomer type.
@@ -335,6 +342,13 @@ namespace R1d
       * The array capacity is equal to the number of monomer types.
       */
       DArray<CField>& cFields();
+
+      /**
+      * Get const array of all chemical potential fields.
+      *
+      * The array capacity is equal to the number of monomer types.
+      */
+      DArray<CField> const & cFields() const;
 
       /**
       * Get chemical potential field for a specific monomer type.
@@ -599,6 +613,13 @@ namespace R1d
    {  return wFields_; }
 
    /*
+   * Get an array of all monomer excess chemical potential fields.
+   */
+   inline 
+   DArray< System::WField > const & System::wFields() const
+   {  return wFields_; }
+
+   /*
    * Get a single monomer excess chemical potential field.
    */
    inline 
@@ -610,6 +631,13 @@ namespace R1d
    */
    inline
    DArray< System::CField >& System::cFields()
+   {  return cFields_; }
+
+   /*
+   * Get const array of all monomer concentration fields.
+   */
+   inline
+   DArray< System::CField > const & System::cFields() const
    {  return cFields_; }
 
    /*

@@ -10,7 +10,6 @@
 
 #include <pscf/iterator/FieldGenerator.h>  // Base class
 #include <pscf/math/RealVec.h>        // container
-#include <prdc/crystal/UnitCell.h>
 #include <util/containers/FSArray.h>  // container
 #include <iostream>
 #include <string>
@@ -97,6 +96,21 @@ namespace Prdc {
       */
       bool isGenerated() const = 0;
 
+      /**
+      * Get contribution to the stress from this mask
+      * 
+      * The mask defined by this class changes in a non-affine manner 
+      * upon changing the lattice parameter corresponding to normalVecId.
+      * Thus, if this lattice parameter is allowed to be flexible, the 
+      * "stress" used to optimize the parameter must contain additional 
+      * terms arising from the mask. This method evaluates these terms
+      * and returns their value. Access to various System properties is
+      * required, so the method must be implemented by subclasses.
+      * 
+      * \param paramId  index of the lattice parameter being varied
+      */
+      virtual double stressTerm(int paramId) const = 0;
+
    protected:
 
       /**
@@ -156,22 +170,8 @@ namespace Prdc {
       * \param paramId  index of the lattice parameter with this stress
       * \param stress  stress value calculated by Mixture object
       */
-      virtual double modifyStressValue(int paramId, double stress) const = 0;
-
-      /** Which lattice parameter corresponds to normalVecId?
-      * 
-      * The index normalVecId refers to one lattice basis vector (e.g.,
-      * in 3D the value is 0, 1, or 2). However, for basis vector i, the 
-      * vector length is not always the i-th lattice parameter in the 
-      * list of lattice parameters. For example, if normalVecId = 2 but
-      * the lattice system is tetragonal, then the length of the vector
-      * denoted by this normalVecId has index 1 in the list of lattice
-      * parameters. This method converts a normalVecId index into the
-      * corresponding lattice parameter index.
-      * 
-      * \param normalVecIndex the value of normalVecId to convert
-      */
-      int convertNormalVecIdToParamId(int normalVecIndex) const;
+      virtual 
+      double modifyStressValue(int paramId, double stress) const = 0;
 
       /**
       * Sets flexible lattice parameters to be compatible with the mask.
@@ -197,12 +197,6 @@ namespace Prdc {
       * Get the space group name for this system.
       */
       virtual std::string systemSpaceGroup() const = 0;
-
-      /**
-      * Get the lattice system for this system.
-      */
-      virtual 
-      typename UnitCell<D>::LatticeSystem systemLatticeSystem() const = 0;
 
       /**
       * Get one of the lattice vectors for this system.

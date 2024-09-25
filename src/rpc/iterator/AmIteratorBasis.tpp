@@ -13,6 +13,7 @@
 #include <pscf/inter/Interaction.h>
 #include <pscf/iterator/NanException.h>
 #include <util/global.h>
+#include <util/misc/ioUtil.h>
 #include <cmath>
 
 namespace Pscf{
@@ -24,7 +25,9 @@ namespace Rpc {
    template <int D>
    AmIteratorBasis<D>::AmIteratorBasis(System<D>& system)
     : Iterator<D>(system),
-      imposedFields_(system)
+      imposedFields_(system),
+      outItr_(0),
+      baseFileName_("")
    {
      isFlexible_ = true;  
      setClassName("AmIteratorBasis"); 
@@ -34,6 +37,11 @@ namespace Rpc {
    template <int D>
    AmIteratorBasis<D>::~AmIteratorBasis()
    {  }
+
+   // Perform necessary setup operations after unit cell is initialized.
+   template <int D>
+   void AmIteratorBasis<D>::initialSetup()
+   {  setup(0); }
 
    // Read parameters from file
    template <int D>
@@ -78,20 +86,25 @@ namespace Rpc {
       // Read optional scaleStress value
       readOptional(in, "scaleStress", scaleStress_);
 
+      // Every outItr_ iterations, write fields to file
+      readOptional(in, "outItr", outItr_);
+
+      // Get base file name for writing fields every outItr_ iterations
+      if (outItr_ > 0) readOptional(in, "baseFileName", baseFileName_);
+
       // Read optional ImposedFieldsGenerator object
       readParamCompositeOptional(in, imposedFields_);
    }
 
-   // Protected virtual function
+   // Protected virtual functions
 
    // Setup before entering iteration loop
    template <int D>
    void AmIteratorBasis<D>::setup(bool isContinuation)
    {
-      if (imposedFields_.isActive()) {
-         imposedFields_.setup();
-      }
-      
+      // Setup imposedFields_ if active
+      if (imposedFields_.isActive()) imposedFields_.setup();
+
       AmIteratorTmpl<Iterator<D>, DArray<double> >::setup(isContinuation);
       interaction_.update(system().interaction());
    }
@@ -393,11 +406,20 @@ namespace Rpc {
          const int nParam = system().unitCell().nParameter();
          FSArray<double,6> parameters = system().unitCell().parameters();
          int counter = 0;
+         double newParam;
 
          for (int i = 0; i < nParam; i++) {
             if (flexibleParams_[i]) {
-               parameters[i] = 1.0/scaleStress_ * 
-                               newGuess[nMonomer*nBasis + counter];
+               newParam = 1.0/scaleStress_ * 
+                          newGuess[nMonomer*nBasis + counter];
+               /*if (newParam < (0.9*parameters[i])) {
+                  parameters[i] = parameters[i] * 0.9;
+               } else if (newParam > (1.1*parameters[i])) {
+                  parameters[i] = parameters[i] * 1.1;
+               } else {
+                  parameters[i] = newParam;
+               }*/
+               parameters[i] = newParam;
                counter++;
             }
          }
@@ -433,6 +455,13 @@ namespace Rpc {
                counter++;
             }
          }
+      }
+
+      int itr = iteration();
+      if ((outItr_ > 0) && (itr % outItr_ == 0)) {
+         std::string filename = baseFileName_ + toString(itr) + "_c.rf";
+         system().fieldIo().writeFieldsRGrid(filename,system().c().rgrid(),
+                                             system().domain().unitCell());
       }
    }
    

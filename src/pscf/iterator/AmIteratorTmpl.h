@@ -84,7 +84,12 @@ namespace Pscf {
       /**
       * Obtain error type
       */
-      std::string errorType();
+      std::string errorType() const;
+
+      /**
+      * Obtain iteration number
+      */
+      int iteration() const;
 
    protected:
 
@@ -522,8 +527,15 @@ namespace Pscf {
    * Return error type
    */ 
    template <typename Iterator, typename T>
-   std::string AmIteratorTmpl<Iterator,T>::errorType() 
+   std::string AmIteratorTmpl<Iterator,T>::errorType() const
    {  return errorType_; }
+
+   /*
+   * Return iteration number
+   */
+   template <typename Iterator, typename T>
+   int AmIteratorTmpl<Iterator,T>::iteration() const
+   {  return itr_; }
    
    /*
    * Return total iteration counter

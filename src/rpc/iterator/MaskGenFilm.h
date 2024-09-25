@@ -58,6 +58,20 @@ namespace Rpc {
       */
       bool isGenerated() const;
 
+      /**
+      * Get contribution to the stress from this mask
+      * 
+      * The mask defined by this class changes in a non-affine manner 
+      * upon changing the lattice parameter corresponding to normalVecId.
+      * Thus, if this lattice parameter is allowed to be flexible, the 
+      * "stress" used to optimize the parameter must contain additional 
+      * terms arising from the mask. This method evaluates these terms
+      * and returns their value. 
+      * 
+      * \param paramId  index of the lattice parameter being varied
+      */
+      double stressTerm(int paramId) const;
+
       using ParamComposite::setClassName;
       using MaskGenFilmBase<D>::normalVecId;
       using MaskGenFilmBase<D>::interfaceThickness;
@@ -125,11 +139,6 @@ namespace Rpc {
       std::string systemSpaceGroup() const;
 
       /**
-      * Get the lattice system for this system.
-      */
-      typename UnitCell<D>::LatticeSystem systemLatticeSystem() const;
-
-      /**
       * Get one of the lattice vectors for this system.
       * 
       * \param id  index of the desired lattice vector
@@ -138,7 +147,6 @@ namespace Rpc {
 
       using MaskGenFilmBase<D>::normalVecCurrent_;
       using MaskGenFilmBase<D>::fBulk_;
-      using MaskGenFilmBase<D>::convertNormalVecIdToParamId;
 
    private:
 
@@ -168,12 +176,6 @@ namespace Rpc {
    template <int D>
    inline std::string MaskGenFilm<D>::systemSpaceGroup() const
    {  return system().groupName(); }
-
-   // Get lattice system for this system.
-   template <int D>
-   inline typename UnitCell<D>::LatticeSystem 
-   MaskGenFilm<D>::systemLatticeSystem() const
-   {  return system().domain().lattice(); }
 
    // Get one of the lattice vectors for this system.
    template <int D>

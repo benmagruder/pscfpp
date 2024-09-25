@@ -74,64 +74,6 @@ namespace Prdc
       }
    }
 
-   template <>
-   int MaskGenFilmBase<1>::convertNormalVecIdToParamId(int normalVecIndex) 
-   const
-   {
-      UTIL_CHECK(normalVecIndex == 0);
-      return 0;
-   }
-
-   template <>
-   int MaskGenFilmBase<2>::convertNormalVecIdToParamId(int normalVecIndex) 
-   const
-   {
-      UTIL_CHECK((normalVecIndex == 0) || (normalVecIndex == 1));
-      if (normalVecIndex == 0) {
-         return 0;
-      } else { // normalVecIndex == 1
-         UnitCell<2>::LatticeSystem lattice = systemLatticeSystem();
-         UTIL_CHECK(lattice != UnitCell<2>::Null);
-         if ((lattice == UnitCell<2>::Rectangular) ||
-             (lattice == UnitCell<2>::Oblique)) {
-            return 1;
-         } else {
-            return 0;
-         }
-      }
-   }
-
-   template <>
-   int MaskGenFilmBase<3>::convertNormalVecIdToParamId(int normalVecIndex) 
-   const
-   {
-      UTIL_CHECK((normalVecIndex >= 0) && (normalVecIndex <= 2));
-      if (normalVecIndex == 0) {
-         return 0;
-      } else if (normalVecIndex == 1) { 
-         UnitCell<3>::LatticeSystem lattice = systemLatticeSystem();
-         UTIL_CHECK(lattice != UnitCell<3>::Null);
-         if ((lattice == UnitCell<3>::Orthorhombic) ||
-             (lattice == UnitCell<3>::Monoclinic) ||
-             (lattice == UnitCell<3>::Triclinic)) {
-            return 1;
-         } else {
-            return 0;
-         }
-      } else { // normalVecIndex == 2
-         UnitCell<3>::LatticeSystem lattice = systemLatticeSystem();
-         if ((lattice == UnitCell<3>::Cubic) ||
-             (lattice == UnitCell<3>::Rhombohedral)) {
-            return 0;
-         } else if ((lattice == UnitCell<3>::Tetragonal) ||
-                    (lattice == UnitCell<3>::Hexagonal)) {
-            return 1;
-         } else { // lattice is Orthorhombic, Monoclinic, or Triclinic
-            return 2;
-         }
-      }
-   }
-
    // Class declarations
    template class MaskGenFilmBase<1>;
    template class MaskGenFilmBase<2>;

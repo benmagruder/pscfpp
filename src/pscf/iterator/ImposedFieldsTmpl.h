@@ -63,22 +63,33 @@ namespace Pscf {
       void update();
 
       /**
-      * Modify stress value if necessary
+      * Modify stress value if necessary.
       * 
-      * Some masks, such as a mask that imposes thin-film confinement, 
-      * change the way that the system free energy depends on the lattice
-      * parameters. If the lattice parameters are to be optimized in such
-      * a system, the calculation of stress may need to be modified 
-      * relative to that of a bulk system. This method allows for the
-      * FieldGenerator objects within this object to modify the stress 
-      * values as necessary. The method should be called by Iterator 
-      * classes that own this object and the return value should be used 
-      * to compute error and optimize the lattice parameters. 
+      * There are two changes to the stress that may be necessary due to 
+      * the presence of external fields. First, If the imposed fields 
+      * change in a non-affine manner under changes in the lattice 
+      * parameters, then the stress used to optimize the lattice 
+      * parameters must contain additional terms arising from the
+      * imposed field(s). A term arises from the presence of external
+      * fields, and two terms arise from the presence of the mask. 
       * 
-      * This method calls the modifyStress method of the FieldGenerator
-      * object that has type Mask or Both and returns the result. If no
-      * FieldGenerator has these types, the value of stress that is 
-      * passed into this method is returned without being modified.
+      * And second, it may be preferable with certain masks to minimize
+      * a property other than fHelmholtz with respect to the lattice 
+      * parameters. For instance, in a thin film it is useful to minimize
+      * the excess free energy per unit area, (fHelmholtz - fRef) * Delta,
+      * where fRef is a reference free energy and Delta is the film 
+      * thickness. Therefore, a FieldGenerator that generates a mask may
+      * modify the stress value accordingly via its modifyStress method.
+      * 
+      * This method first calls the stressTerm() methods of both
+      * FieldGenerator objects and adds them to the original value of 
+      * stress that was passed in as a parameter. It then calls the 
+      * modifyStress method of the FieldGenerator object that has type 
+      * Mask or Both (if it exists) and returns the result.
+      * 
+      * The method should be called by Iterator classes that own this 
+      * object and the return value should be used to compute error and 
+      * optimize the lattice parameters. 
       * 
       * \param paramId  index of the lattice parameter with this stress
       * \param stress  stress value calculated by Mixture object

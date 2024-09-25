@@ -70,6 +70,8 @@ namespace Rpc {
       fExt_(0.0),
       pressure_(0.0),
       hasMixture_(false),
+      isInitializedGrid_(false),
+      isInitializedBasis_(false),
       isAllocatedGrid_(false),
       isAllocatedBasis_(false),
       hasCFields_(false),
@@ -706,18 +708,7 @@ namespace Rpc {
    template <int D>
    void System<D>::readWBasis(const std::string & filename)
    {
-      // Precondition
-      UTIL_CHECK(domain_.hasGroup());
-
-      if (!domain_.unitCell().isInitialized()) {
-         readFieldHeader(filename);
-      }
-      UTIL_CHECK(domain_.unitCell().isInitialized());
-      UTIL_CHECK(domain_.basis().isInitialized());
-      UTIL_CHECK(domain_.basis().nBasis() > 0);
-      if (!isAllocatedBasis_) {
-         allocateFieldsBasis();
-      }
+      initializeBasis(filename);
 
       // Read w fields
       w_.readBasis(filename, domain_.unitCell());
@@ -733,18 +724,7 @@ namespace Rpc {
    template <int D>
    void System<D>::readWRGrid(const std::string & filename)
    {
-      UTIL_CHECK(isAllocatedGrid_);
-
-      // If necessary, peek at header to initialize unit cell
-      if (!domain_.unitCell().isInitialized()) {
-         readFieldHeader(filename);
-      }
-      UTIL_CHECK(domain_.unitCell().isInitialized());
-      if (domain_.hasGroup() && !isAllocatedBasis_) {
-         UTIL_CHECK(domain_.basis().isInitialized());
-         UTIL_CHECK(domain_.basis().nBasis() > 0);
-         allocateFieldsBasis();
-      }
+      initializeGrid(filename);
 
       // Read w fields
       w_.readRGrid(filename, domain_.unitCell());
@@ -769,14 +749,8 @@ namespace Rpc {
       UTIL_CHECK(isAllocatedGrid_);
       UTIL_CHECK(domain_.hasGroup());
 
-      if (!domain_.unitCell().isInitialized()) {
-         readFieldHeader(filename);
-      }
-      UTIL_CHECK(domain_.unitCell().isInitialized());
-      UTIL_CHECK(domain_.basis().isInitialized());
-      if (!isAllocatedBasis_) {
-         allocateFieldsBasis();
-      }
+      initializeBasis(filename);
+
       const int nb = domain_.basis().nBasis();
       UTIL_CHECK(nb > 0);
 
@@ -798,6 +772,38 @@ namespace Rpc {
          }
          for (j = 0; j < nm;  ++j) {
             tmpFieldsBasis_[j][i] = wtmp[j];
+         }
+      }
+
+      // Calculate sumChiInverse
+      double sumChiInverse = 0.0;
+      for (i = 0; i < nm; i++) {
+         for (j = 0; j < nm; j++) {
+            sumChiInverse += interaction().chiInverse(j,i);
+         }
+      }
+
+      // Adjust guess if system has a mask
+      if (hasMask()) {
+         UTIL_CHECK(mask().isSymmetric());
+         for (i = 1; i < nb; i++) {
+            for (j = 0; j < nm; j++) {
+               tmpFieldsBasis_[j][i] -= mask().basis()[i] / sumChiInverse;
+            }
+         }
+      }
+
+      // Adjust guess if system has external fields
+      if (hasExternalFields()) {
+         UTIL_CHECK(h().isSymmetric());
+         for (i = 1; i < nb; i++) {
+            for (j = 0; j < nm; j++) {
+               tmpFieldsBasis_[j][i] += h().basis(j)[i] * 
+                                                (1 - (1 / sumChiInverse));
+            }
+         }
+         for (j = 0; j < nm; j++) {
+            tmpFieldsBasis_[j][0] += h().basis(j)[0];
          }
       }
 
@@ -1071,7 +1077,6 @@ namespace Rpc {
             }
          }
       }
-      Log::file() << std::endl << "fIdeal: " << fIdeal_ << std::endl;
 
       // Volume integrals with a mask: If the system has a mask, then the
       // volume that should be used in calculating free energy/pressure
@@ -1107,7 +1112,6 @@ namespace Rpc {
       temp /= mask().phiTot();
       fIdeal_ += temp;
       fHelmholtz_ += fIdeal_;
-      Log::file() << "fLegendre: " << temp << std::endl;
 
       // Compute contribution from external fields, if they exist
       if (hasExternalFields()) {
@@ -1174,8 +1178,6 @@ namespace Rpc {
       }
       fInter_ /= mask().phiTot();
       fHelmholtz_ += fInter_;
-      Log::file() << "fInter: " << fInter_ << std::endl;
-      Log::file() << "fHelmholtz: " << fHelmholtz_ << std::endl;
 
       // Initialize pressure
       pressure_ = -fHelmholtz_;
@@ -1572,12 +1574,7 @@ namespace Rpc {
    {
       UTIL_CHECK(domain_.hasGroup());
 
-      // If basis fields are not allocated, peek at field file header to
-      // get unit cell parameters, initialize basis and allocate fields.
-      if (!isAllocatedBasis_) {
-         readFieldHeader(inFileName);
-         allocateFieldsBasis();
-      }
+      initializeBasis(inFileName);
 
       // Read, convert, and write fields
       UnitCell<D> tmpUnitCell;
@@ -1596,12 +1593,7 @@ namespace Rpc {
    {
       UTIL_CHECK(domain_.hasGroup());
 
-      // If basis fields are not allocated, peek at field file header to
-      // get unit cell parameters, initialize basis and allocate fields.
-      if (!isAllocatedBasis_) {
-         readFieldHeader(inFileName);
-         allocateFieldsBasis();
-      }
+      initializeBasis(inFileName);
 
       // Read, convert and write fields
       UnitCell<D> tmpUnitCell;
@@ -1618,13 +1610,8 @@ namespace Rpc {
    void System<D>::kGridToRGrid(const std::string & inFileName,
                                 const std::string& outFileName)
    {
-      // If basis fields are not allocated, peek at field file header to
-      // get unit cell parameters, initialize basis and allocate fields.
-      if (domain_.hasGroup() && !isAllocatedBasis_) {
-         readFieldHeader(inFileName);
-         allocateFieldsBasis();
-      }
-
+      initializeGrid(inFileName);
+      
       // Read, convert and write fields
       UnitCell<D> tmpUnitCell;
       fieldIo().readFieldsKGrid(inFileName, tmpFieldsKGrid_, tmpUnitCell);
@@ -1643,13 +1630,8 @@ namespace Rpc {
    void System<D>::rGridToKGrid(const std::string & inFileName,
                                 const std::string & outFileName)
    {
-      // If basis fields are not allocated, peek at field file header to
-      // get unit cell parameters, initialize basis and allocate fields.
-      if (domain_.hasGroup() && !isAllocatedBasis_) {
-         readFieldHeader(inFileName);
-         allocateFieldsBasis();
-      }
-
+      initializeGrid(inFileName);
+      
       // Read, convert and write fields
       UnitCell<D> tmpUnitCell;
       fieldIo().readFieldsRGrid(inFileName, tmpFieldsRGrid_,
@@ -1671,12 +1653,7 @@ namespace Rpc {
    {
       UTIL_CHECK(domain_.hasGroup());
 
-      // If basis fields are not allocated, peek at field file header to
-      // get unit cell parameters, initialize basis and allocate fields.
-      if (!isAllocatedBasis_) {
-         readFieldHeader(inFileName);
-         allocateFieldsBasis();
-      }
+      initializeBasis(inFileName);
 
       // Read, convert and write fields
       UnitCell<D> tmpUnitCell;
@@ -1697,12 +1674,7 @@ namespace Rpc {
    {
       UTIL_CHECK(domain_.hasGroup());
 
-      // If basis fields are not allocated, peek at field file header to
-      // get unit cell parameters, initialize basis and allocate fields.
-      if (!isAllocatedBasis_) {
-         readFieldHeader(inFileName);
-         allocateFieldsBasis();
-      }
+      initializeBasis(inFileName);
 
       // Read, convert and write fields
       UnitCell<D> tmpUnitCell;
@@ -1724,12 +1696,7 @@ namespace Rpc {
    {
       UTIL_CHECK(domain_.hasGroup());
 
-      // If basis fields are not allocated, peek at field file header to
-      // get unit cell parameters, initialize basis and allocate fields.
-      if (!isAllocatedBasis_) {
-         readFieldHeader(inFileName);
-         allocateFieldsBasis();
-      }
+      initializeBasis(inFileName);
 
       // Read fields
       UnitCell<D> tmpUnitCell;
@@ -1788,6 +1755,60 @@ namespace Rpc {
    }
 
    // Private member functions
+
+   /*
+   * Initialize unit cell from field file header, optionally allocate basis
+   */
+   template <int D>
+   void System<D>::initializeGrid(const std::string & filename) 
+   {
+      if (isInitializedGrid_) return;
+      
+      UTIL_CHECK(isAllocatedGrid_);
+
+      // If necessary, peek at header to initialize unit cell
+      if (!domain_.unitCell().isInitialized()) {
+         readFieldHeader(filename);
+      }
+      UTIL_CHECK(domain_.unitCell().isInitialized());
+      if (domain_.hasGroup() && !isAllocatedBasis_) {
+         UTIL_CHECK(domain_.basis().isInitialized());
+         UTIL_CHECK(domain_.basis().nBasis() > 0);
+         allocateFieldsBasis();
+         isInitializedBasis_ = true;
+      }
+
+      if (iteratorPtr_) iteratorPtr_->initialSetup();
+
+      isInitializedGrid_ = true;
+   }
+
+   /*
+   * Initialize unit cell from field file header, then allocate basis
+   */
+   template <int D>
+   void System<D>::initializeBasis(const std::string & filename) 
+   {
+      if (isInitializedBasis_) return;
+      
+      // Precondition
+      UTIL_CHECK(domain_.hasGroup());
+
+      if (!domain_.unitCell().isInitialized()) {
+         readFieldHeader(filename);
+      }
+      UTIL_CHECK(domain_.unitCell().isInitialized());
+      UTIL_CHECK(domain_.basis().isInitialized());
+      UTIL_CHECK(domain_.basis().nBasis() > 0);
+      if (!isAllocatedBasis_) {
+         allocateFieldsBasis();
+      }
+
+      if (iteratorPtr_) iteratorPtr_->initialSetup();
+
+      isInitializedGrid_ = true;
+      isInitializedBasis_ = true;
+   }
 
    /*
    * Allocate memory for fields in grid format.

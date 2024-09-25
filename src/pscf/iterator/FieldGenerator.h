@@ -80,14 +80,35 @@ namespace Pscf {
       virtual bool isGenerated() const = 0;
 
       /**
+      * Get contribution to the stress from this imposed field
+      * 
+      * If the imposed fields change in a non-affine manner under changes
+      * in the lattice parameters, then the "stress" used to optimize the
+      * lattice parameters must contain additional terms arising from the
+      * imposed field(s). A term arises from the presence of external
+      * fields, and two terms arise from the presence of the mask. Thus,
+      * this method may return a nonzero value regardless of the Type of
+      * this object. A return value of zero indicates that the imposed
+      * field(s) stretch affinely under a change in the given lattice 
+      * parameter. The default implementation returns zero; subclasses
+      * should override this method if necessary.
+      * 
+      * \param paramId  index of the lattice parameter being varied
+      */
+      virtual double stressTerm(int paramId) const
+      {  return 0.0; } 
+
+      /**
       * Modify stress value if necessary (only if type_ == Mask or Both)
       * 
-      * Some masks, such as a mask that imposes thin-film confinement, 
-      * change the way that the system free energy depends on the lattice
-      * parameters. If the lattice parameters are to be optimized in such
-      * a system, the calculation of stress may need to be modified 
-      * relative to that of a bulk system. This method allows for 
-      * FieldGenerator objects to modify the stress values as necessary. 
+      * It may be preferable with certain masks to minimize a property 
+      * other than fHelmholtz with respect to the lattice parameters. For 
+      * instance, in a thin film it is useful to minimize the excess free 
+      * energy per unit area, (fHelmholtz - fRef) * Delta, where fRef is 
+      * a reference free energy and Delta is the film thickness. Therefore, 
+      * a FieldGenerator that generates a mask may modify the stress value 
+      * accordingly via its modifyStress method.
+      * 
       * The method should be called by Iterator classes (via the 
       * ImposedFieldsGenerator object that owns this object) and the 
       * return value should be used to compute error and optimize the 
@@ -126,6 +147,11 @@ namespace Pscf {
 
       /**
       * Modify stress value if necessary
+      * 
+      * This virtual method is called by modifyStress if type_ == Mask
+      * or Both. This method should be overridden by any FieldGenerator 
+      * that wishes to minimize some property other than fHelmholtz with
+      * respect to the lattice parameters. 
       * 
       * \param paramId  index of the lattice parameter with this stress
       * \param stress  stress calculated by Mixture, modified internally

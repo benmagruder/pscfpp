@@ -82,6 +82,12 @@ namespace Pscf {
    // Modify stress value if necessary
    double ImposedFieldsTmpl::modifyStress(int paramId, double stress) const
    {
+      if (fieldGenPtr1_) {
+         stress += fieldGenPtr1_->stressTerm(paramId);
+      }
+      if (fieldGenPtr2_) {
+         stress += fieldGenPtr2_->stressTerm(paramId);
+      }
       if ((fieldGenPtr1_->type() == FieldGenerator::Mask) || 
           (fieldGenPtr1_->type() == FieldGenerator::Both)) {
          return fieldGenPtr1_->modifyStress(paramId,stress);

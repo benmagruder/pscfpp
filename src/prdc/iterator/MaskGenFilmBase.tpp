@@ -139,8 +139,8 @@ namespace Prdc
       }
    }
 
-   // Explicit Specializations for checkLatticeVectors and 
-   // convertNormalVecIdToParamId are in MaskGenFilmBase.cpp
+   // Explicit Specializations for checkLatticeVectors are in 
+   // MaskGenFilmBase.cpp
 }
 }
 #endif

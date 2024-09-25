@@ -52,6 +52,11 @@ namespace Rpc
       ~Iterator();
 
       /**
+      * Perform necessary setup operations after unit cell is initialized.
+      */
+      virtual void initialSetup() = 0;
+
+      /**
       * Iterate to solution.
       *
       * \param isContinuation true iff a continuation within a sweep

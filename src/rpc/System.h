@@ -1023,6 +1023,16 @@ namespace Rpc {
       bool hasMixture_;
 
       /**
+      * Has the unit cell been initialized for a calculation on a grid?
+      */
+      bool isInitializedGrid_;
+
+      /**
+      * Has the unit cell been initialized for a calculation in basis format?
+      */
+      bool isInitializedBasis_;
+
+      /**
       * Has memory been allocated for fields in grid format?
       */
       bool isAllocatedGrid_;
@@ -1051,6 +1061,20 @@ namespace Rpc {
       bool hasFreeEnergy_;
 
       // Private member functions
+
+      /**
+      * Initialize unit cell by reading header of field file in r-grid format
+      * 
+      * \param  filename name of r-grid field file to read
+      */
+      void initializeGrid(const std::string & filename);
+
+      /**
+      * Initialize unit cell by reading header of field file in basis format
+      * 
+      * \param  filename name of basis field file to read
+      */
+      void initializeBasis(const std::string & filename);
 
       /**
       * Allocate memory for fields in grid formats (private)

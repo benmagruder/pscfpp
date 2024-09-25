@@ -47,6 +47,11 @@ namespace Rpc
       ~AmIteratorBasis();
 
       /**
+      * Perform necessary setup operations after unit cell is initialized.
+      */
+      void initialSetup();
+
+      /**
       * Read all parameters and initialize.
       *
       * \param in input filestream
@@ -89,6 +94,7 @@ namespace Rpc
       // Inherited public member functions
       using AmIteratorTmpl<Iterator<D>, DArray<double> >::solve;
       using AmIteratorTmpl<Iterator<D>, DArray<double> >::clearTimers;
+      using AmIteratorTmpl<Iterator<D>, DArray<double> >::iteration;
       using Iterator<D>::isFlexible;
       using Iterator<D>::flexibleParams;
       using Iterator<D>::setFlexibleParams;
@@ -126,6 +132,12 @@ namespace Rpc
 
       /// How are stress residuals scaled in error calculation?
       double scaleStress_;
+
+      /// Write fields to file every outItr_ iterations
+      int outItr_;
+
+      /// Base filename for writing fields every outItr_ iterations
+      std::string baseFileName_;
 
       /**
       * Assign one field to another.
