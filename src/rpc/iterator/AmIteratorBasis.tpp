@@ -352,6 +352,9 @@ namespace Rpc {
                double stressVal = system().mixture().stress(i);
 
                if (imposedFields_.isActive()) {
+                  if (system().hasMask()) {
+                     stressVal /= system().mask().phiTot();
+                  }
                   stressVal = imposedFields_.modifyStress(i,stressVal);
                } 
                resid[nMonomer*nBasis + counter] = scaleStress_ * -1

@@ -82,22 +82,25 @@ namespace Pscf {
    // Modify stress value if necessary
    double ImposedFieldsTmpl::modifyStress(int paramId, double stress) const
    {
+      Log::file() << std::endl << "standard stress: " << stress << std::endl;
       if (fieldGenPtr1_) {
          stress += fieldGenPtr1_->stressTerm(paramId);
+         Log::file() << "stress + fieldgen1 stress: " << stress << std::endl;
       }
       if (fieldGenPtr2_) {
          stress += fieldGenPtr2_->stressTerm(paramId);
+         Log::file() << "stress + fieldgen2 stress: " << stress << std::endl;
       }
       if ((fieldGenPtr1_->type() == FieldGenerator::Mask) || 
           (fieldGenPtr1_->type() == FieldGenerator::Both)) {
-         return fieldGenPtr1_->modifyStress(paramId,stress);
+         stress = fieldGenPtr1_->modifyStress(paramId,stress);
       } else 
       if ((fieldGenPtr2_->type() == FieldGenerator::Mask) || 
           (fieldGenPtr2_->type() == FieldGenerator::Both)) {
-         return fieldGenPtr2_->modifyStress(paramId,stress);
-      } else {
-         return stress;
+         stress = fieldGenPtr2_->modifyStress(paramId,stress);
       }
+      Log::file() << "modified stress: " << stress << std::endl;
+      return stress;
    }
 
    // Return specialized sweep parameter types to add to the Sweep object

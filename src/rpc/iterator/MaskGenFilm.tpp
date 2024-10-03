@@ -66,6 +66,9 @@ namespace Rpc
          // Get the length L of the lattice basis vector normal to the walls
          double L = system().domain().unitCell().parameter(paramId);
 
+         // Get the volume fraction of the unit cell occupied by polymers
+         double phiTot = system().mask().phiTot();
+
          // Create a 3 element vector 'dim' that contains the grid dimensions.
          // If system is 2D (1D), then the z (y & z) dimensions are set to 1.
          IntVec<3> dim;
@@ -114,6 +117,8 @@ namespace Rpc
          int nMonomer = system().mixture().nMonomer();
          basis.allocate(nBasis);
          system().fieldIo().convertRGridToBasis(rGrid, basis);
+         //system().fieldIo().writeFieldBasis("dMaskdL.bf",basis,system().domain().unitCell());
+         //system().fieldIo().writeFieldRGrid("dMaskdL.rf",rGrid,system().domain().unitCell());
 
          // Get the integral term in the stress
          double intTerm = 0;
@@ -141,53 +146,23 @@ namespace Rpc
                intTerm += xi[i] * basis[i];
             }
          }
+         //system().fieldIo().writeFieldBasis("xi.bf",xi,system().domain().unitCell());
 
-         intTerm /= system().mask().phiTot();
+         intTerm /= phiTot;
+         Log::file() << "  intTerm: " << intTerm << std::endl;
 
-         // Get the free energy term in the stress
-         double fQTerm = 0;
-         double phi, mu;
-         int nPolymer = system().mixture().nPolymer();
-         int nSolvent = system().mixture().nSolvent();
-         
-         if (nPolymer > 0) { // Subtract out polymer ideal gas contributions
-            Polymer<D> const * polymerPtr;
-            double length;
-            for (int i = 0; i < nPolymer; ++i) {
-               polymerPtr = &system().mixture().polymer(i);
-               phi = polymerPtr->phi();
-               mu = polymerPtr->mu();
-               length = polymerPtr->length();
-               // Recall: mu = ln(phi/q)
-               if (phi > 1.0E-08) {
-                  fQTerm += phi*( mu - 1.0 )/length;
-               }
-            }
-         }
-         if (nSolvent > 0) { // Subtract out solvent ideal gas contributions
-            Solvent<D> const * solventPtr;
-            double size;
-            for (int i = 0; i < nSolvent; ++i) {
-               solventPtr = &system().mixture().solvent(i);
-               phi = solventPtr->phi();
-               mu = solventPtr->mu();
-               size = solventPtr->size();
-               if (phi > 1.0E-08) {
-                  fQTerm += phi*( mu - 1.0 )/size;
-               }
-            }
-         }
-
-         // Get system free energy
+         // Get the pressure term in the stress
          if (!sysPtr_->hasFreeEnergy()) {
             sysPtr_->computeFreeEnergy();
          }
-         double fSys = sysPtr_->fHelmholtz();
+         double pSys = sysPtr_->pressure();
+         double pTerm = pSys * excludedThickness() / 
+                        (phiTot * L * L);
+         
+         Log::file() << "  pTerm: " << pTerm << std::endl;
 
-         double fTerm = (fSys - fQTerm) * excludedThickness() / 
-                        (system().mask().phiTot() * L * L);
-
-         double term = - intTerm - fTerm;
+         double term = pTerm - intTerm;
+         Log::file() << "  term: " << term << std::endl;
          return term;
 
       } else {
