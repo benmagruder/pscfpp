@@ -783,10 +783,11 @@ namespace Rpc {
          }
       }
 
-      // Adjust guess if system has a mask
+      // If system has a mask, add the component of xi arising from the mask
       if (hasMask()) {
          UTIL_CHECK(mask().isSymmetric());
-         for (i = 1; i < nb; i++) {
+         for (i = 1; i < nb; i++) { 
+            // note: loop starts at i = 1 since spatial average of xi is 0
             for (j = 0; j < nm; j++) {
                tmpFieldsBasis_[j][i] -= mask().basis()[i] / sumChiInverse;
             }
@@ -796,14 +797,27 @@ namespace Rpc {
       // Adjust guess if system has external fields
       if (hasExternalFields()) {
          UTIL_CHECK(h().isSymmetric());
-         for (i = 1; i < nb; i++) {
+
+         // First term: add h().basis(j) to guess for field j
+         for (i = 0; i < nb; i++) {
             for (j = 0; j < nm; j++) {
-               tmpFieldsBasis_[j][i] += h().basis(j)[i] * 
-                                                (1 - (1 / sumChiInverse));
+               tmpFieldsBasis_[j][i] += h().basis(j)[i];
             }
          }
-         for (j = 0; j < nm; j++) {
-            tmpFieldsBasis_[j][0] += h().basis(j)[0];
+
+         // Second term: add the component of xi arising from the h fields
+         double tmp;
+         for (i = 1; i < nb; i++) {
+            // note: loop starts at i = 1 since spatial average of xi is 0
+            tmp = 0.0;
+            for (j = 0; j < nm; j++) {
+               for (k = 0; k < nm; k++) {
+                  tmp += h().basis(j)[i] * interaction().chiInverse(j,k);
+               }
+            }
+            for (j = 0; j < nm; j++) {
+               tmpFieldsBasis_[j][i] -= tmp / sumChiInverse;
+            }
          }
       }
 
