@@ -61,8 +61,9 @@ namespace Rpc
       int nvParamId = convertFullParamIdToReduced<D>(normalVecId_,
                                                  system().domain().lattice());
 
-      if (nvParamId == paramId) {
+      if ((nvParamId == paramId) && (!isAthermal())) {
          UTIL_CHECK(system().hasMask());
+         UTIL_CHECK(system().hasExternalFields());
 
          // Setup
          int nMonomer = system().mixture().nMonomer();
@@ -77,7 +78,7 @@ namespace Rpc
          int x, y, z;
          int counter = 0;
          double d, maskVal;
-         double term = 0;
+         double term = 0.0;
 
          // Create a 3 element vector 'dim' that contains the grid dimensions.
          // If system is 2D (1D), then the z (y & z) dimensions are set to 1.
@@ -104,7 +105,7 @@ namespace Rpc
                   d = (double)coords[normalVecId_] / 
                       (double)dim[normalVecId_];
 
-                  rGrid[counter] = maskVal * (maskVal - 1) * 8
+                  rGrid[counter] = maskVal * (maskVal - 1) * 8.0
                                    * (std::abs(d - 0.5) - 0.5)
                                    / interfaceThickness_;
                   counter++;
@@ -122,9 +123,9 @@ namespace Rpc
                   for (z = 0; z < dim[2]; z++) {
                      coords[2] = z;
                      if (coords[normalVecId_] < (dim[normalVecId_] / 2)) {
-                        wRGrid[counter] = rGrid[counter] * -1 * chiBottom(i);
+                        wRGrid[counter] = -1.0 * rGrid[counter] * chiBottom(i);
                      } else {
-                        wRGrid[counter] = rGrid[counter] * -1 * chiTop(i);
+                        wRGrid[counter] = -1.0 * rGrid[counter] * chiTop(i);
                      }
                      counter++;
                   }
@@ -140,7 +141,7 @@ namespace Rpc
                term += cBasis[i] * wBasis[i];
             }
          }
-         term *= 2 / system().mask().phiTot();
+         term /= system().mask().phiTot();
          return term;
 
       } else {

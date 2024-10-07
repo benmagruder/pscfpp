@@ -103,7 +103,7 @@ namespace Rpc
                   d = (double)coords[normalVecId()] / 
                       (double)dim[normalVecId()];
 
-                  rGrid[counter] = maskVal * (maskVal - 1) * 8
+                  rGrid[counter] = maskVal * (maskVal - 1) * 8.0
                                    * (std::abs(d - 0.5) - 0.5)
                                    / interfaceThickness();
                   counter++;
@@ -117,11 +117,9 @@ namespace Rpc
          int nMonomer = system().mixture().nMonomer();
          basis.allocate(nBasis);
          system().fieldIo().convertRGridToBasis(rGrid, basis);
-         //system().fieldIo().writeFieldBasis("dMaskdL.bf",basis,system().domain().unitCell());
-         //system().fieldIo().writeFieldRGrid("dMaskdL.rf",rGrid,system().domain().unitCell());
 
          // Get the integral term in the stress
-         double intTerm = 0;
+         double intTerm = 0.0;
          DArray<double> xi;
          xi.allocate(nBasis);
          DArray<double> wVals;
@@ -146,10 +144,8 @@ namespace Rpc
                intTerm += xi[i] * basis[i];
             }
          }
-         //system().fieldIo().writeFieldBasis("xi.bf",xi,system().domain().unitCell());
 
          intTerm /= phiTot;
-         Log::file() << "  intTerm: " << intTerm << std::endl;
 
          // Get the pressure term in the stress
          if (!sysPtr_->hasFreeEnergy()) {
@@ -158,11 +154,8 @@ namespace Rpc
          double pSys = sysPtr_->pressure();
          double pTerm = pSys * excludedThickness() / 
                         (phiTot * L * L);
-         
-         Log::file() << "  pTerm: " << pTerm << std::endl;
 
          double term = pTerm - intTerm;
-         Log::file() << "  term: " << term << std::endl;
          return term;
 
       } else {
