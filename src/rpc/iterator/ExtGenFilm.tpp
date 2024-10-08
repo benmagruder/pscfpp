@@ -40,7 +40,8 @@ namespace Rpc
    template <int D>
    ExtGenFilm<D>::ExtGenFilm(System<D>& sys)
     : ExtGenFilmBase<D>::ExtGenFilmBase(),
-      sysPtr_(&sys)
+      sysPtr_(&sys),
+      interfaceThickness_(-1.0)
    {  setClassName("ExtGenFilm"); }
 
    /*
